@@ -11,13 +11,29 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.token.v1.os.launcher.ICustomerScreenService;
 import com.token.v1.os.launcher.INotificationService;
 import com.token.v1.os.launcher.IPrinterService;
 
+import org.json.JSONObject;
+import org.w3c.dom.Text;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,19 +59,65 @@ public class MainActivity extends AppCompatActivity {
 
     String mTotalStr = null ;
 
-    private Button printerTestButton;
-    private Button notificationOKButton;
-    private Button notificationNOKButton;
-    private Button customerScreenTestButton;
-
-
+    private EditText idEditText;
+    private TextView balanceTextView;
+    private Button getBalanceButton;
+    private EditText receiverEditText;
+    private EditText amountEditText;
+    private Button makeTransferButton;
+    private EditText amountWithdraw;
+    private Button withdrawButton;
 
     final int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
             | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
             //| View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+            //| View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             //| View.SYSTEM_UI_FLAG_FULLSCREEN
             | View.SYSTEM_UI_FLAG_IMMERSIVE;
+
+    public void getBalance(final String id){
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    URL url = new URL("https://erc20-demo.appspot.com/balance");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+
+                    JSONObject jsonParam = new JSONObject();
+                    jsonParam.put("address", id);
+                    OutputStream os = conn.getOutputStream();
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                    writer.write(jsonParam.toString());
+                    Log.i(MainActivity.class.toString(), jsonParam.toString());
+                    writer.flush();
+                    writer.close();
+                    os.close();
+                    conn.connect();
+                    InputStream response = conn.getInputStream();
+
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+                    StringBuilder sb = new StringBuilder();
+
+                    String line = null;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line + "\n");
+                    }
+                    JSONObject obj = new JSONObject(sb.toString());
+
+                    balanceTextView.setText(obj.getString("amount"));
+
+                    conn.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        thread.start();
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,75 +133,136 @@ public class MainActivity extends AppCompatActivity {
         m_screenWidth = dm.widthPixels;
         m_screenHeight = dm.heightPixels;
 
+        balanceTextView = (TextView) findViewById(R.id.balanceTextView);
 
-        printerTestButton = findViewById(R.id.printerTestButton);
-        printerTestButton.setOnClickListener(new View.OnClickListener() {
+        idEditText = (EditText)findViewById(R.id.idEditText);
+        receiverEditText = (EditText)findViewById(R.id.receiverEditText);
+        amountEditText = (EditText)findViewById(R.id.amountEditText);
+
+        getBalanceButton = findViewById(R.id.getBalanceButton);
+        getBalanceButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    printText("HELLO WORLD!!!", 10, false);
-                    closeReceipt();
-                }catch (RemoteException e){
-                    Log.d(TAG, "Printer Remote exception ");
-                    e.printStackTrace();
-                }catch (NullPointerException e){
-                    Log.d(TAG,"Printer Service is null");
-                    e.printStackTrace();
-                }
-            }
-        });
-
-        notificationOKButton = findViewById(R.id.notifiationOKButton);
-        notificationOKButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                try {
-                    m_notif.setNotification("Approved", 0xFF00FF00, 1500);
-                }catch (RemoteException e){
-                    Log.d(TAG, "Notification Remote exception ");
-                    e.printStackTrace();
-                }catch (NullPointerException e){
-                    Log.d(TAG,"Notification Service is null");
-                    e.printStackTrace();
-                }
+                final String id = idEditText.getText().toString();
+                getBalance(id);
 
             }
         });
 
-        notificationNOKButton = findViewById(R.id.notificationNOKButton);
-        notificationNOKButton.setOnClickListener(new View.OnClickListener() {
+        makeTransferButton = findViewById(R.id.makeTransferButton);
+        makeTransferButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    m_notif.setNotification("Canceled", 0xFF800000, 2000);
+                final String sender = idEditText.getText().toString();
+                final String receiver = receiverEditText.getText().toString();
+                final String amount = amountEditText.getText().toString();
 
-                }catch (RemoteException e){
-                    Log.d(TAG, "Notification Remote exception ");
-                    e.printStackTrace();
-                }catch (NullPointerException e){
-                    Log.d(TAG,"Notification Service is null");
-                    e.printStackTrace();
-                }
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            URL url = new URL("https://erc20-demo.appspot.com/transfer");
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("POST");
+                            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+
+                            JSONObject jsonParam = new JSONObject();
+                            jsonParam.put("sender_address", sender);
+                            jsonParam.put("receiver_address", receiver);
+                            jsonParam.put("amount", amount);
+
+                            OutputStream os = conn.getOutputStream();
+                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                            writer.write(jsonParam.toString());
+                            Log.i(MainActivity.class.toString(), jsonParam.toString());
+                            writer.flush();
+                            writer.close();
+                            os.close();
+                            conn.connect();
+                            InputStream response = conn.getInputStream();
+
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+                            StringBuilder sb = new StringBuilder();
+
+                            String line = null;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line + "\n");
+                            }
+                            JSONObject obj = new JSONObject(sb.toString());
+
+                            String isOK = obj.getString("OK");
+
+                            conn.disconnect();
+                            getBalance(sender);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+                thread.start();
+
+
+
+            }
+        });
+        amountWithdraw = (EditText) findViewById(R.id.amountWithdraw);
+        withdrawButton = findViewById(R.id.withdrawButton);
+        withdrawButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final String address = idEditText.getText().toString();
+                final String amount = amountWithdraw.getText().toString();
+
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            URL url = new URL("https://erc20-demo.appspot.com/sell");
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("POST");
+                            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+
+                            JSONObject jsonParam = new JSONObject();
+                            jsonParam.put("address", address);
+                            jsonParam.put("amount", amount);
+
+                            OutputStream os = conn.getOutputStream();
+                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+                            writer.write(jsonParam.toString());
+                            Log.i(MainActivity.class.toString(), jsonParam.toString());
+                            writer.flush();
+                            writer.close();
+                            os.close();
+                            conn.connect();
+                            InputStream response = conn.getInputStream();
+
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(response));
+                            StringBuilder sb = new StringBuilder();
+
+                            String line = null;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line + "\n");
+                            }
+                            JSONObject obj = new JSONObject(sb.toString());
+
+                            String isOK = obj.getString("OK");
+
+                            conn.disconnect();
+                            getBalance(address);
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+                thread.start();
 
             }
         });
 
-        customerScreenTestButton = findViewById(R.id.customerScreenButton);
-        customerScreenTestButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    m_ics.setHeaderAndText("CUSTOMER SCREEN TEST", 1, "AMOUNT : XXX", 3);
-                }catch (RemoteException e){
-                    Log.d(TAG, "CS Remote exception ");
-                    e.printStackTrace();
-                }catch (NullPointerException e){
-                    Log.d(TAG,"Customer Service is null");
-                    e.printStackTrace();
-                }
-            }
-        });
     }
 
 
