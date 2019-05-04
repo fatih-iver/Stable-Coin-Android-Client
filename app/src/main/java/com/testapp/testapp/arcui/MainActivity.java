@@ -180,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(View view) {
                             qrImageView.setVisibility(View.GONE);
                             mainLinearLayout.setVisibility(View.VISIBLE);
+                            getBalance(idEditText.getText().toString());
                         }
                     });
                 } catch (WriterException e) {
@@ -477,7 +478,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        balanceTextView.setText("0");
         if (requestCode == BARCODE_READER_REQUEST_CODE) {
             if (resultCode == CommonStatusCodes.SUCCESS) {
                 if (data != null) {
