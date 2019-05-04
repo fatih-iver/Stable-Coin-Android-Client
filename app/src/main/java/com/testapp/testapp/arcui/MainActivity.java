@@ -3,9 +3,11 @@ package com.testapp.testapp.arcui;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.provider.ContactsContract;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -13,11 +15,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.vision.barcode.Barcode;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
 import com.testapp.testapp.arcui.barcode.BarcodeCaptureActivity;
 import com.token.v1.os.launcher.ICustomerScreenService;
 import com.token.v1.os.launcher.INotificationService;
@@ -74,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
     private Button withdrawButton;
     private ImageView qr_receive;
     private ImageView qr_send;
+    private ImageView qrImageView;
+    private LinearLayout mainLinearLayout;
 
     private final int BARCODE_READER_REQUEST_CODE = 1;
 
@@ -150,11 +160,31 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(intent, BARCODE_READER_REQUEST_CODE);
             }
         });
+        mainLinearLayout = (LinearLayout) findViewById(R.id.mainLinearLayout);
+        qrImageView = (ImageView) findViewById(R.id.qrImageView);
         qr_send = (ImageView) findViewById(R.id.qrSend);
         qr_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                String text= idEditText.getText().toString();
+                MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
+                try {
+                    BitMatrix bitMatrix = multiFormatWriter.encode(text, BarcodeFormat.QR_CODE,200,200);
+                    BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+                    Bitmap bitmap = barcodeEncoder.createBitmap(bitMatrix);
+                    mainLinearLayout.setVisibility(View.GONE);
+                    qrImageView.setVisibility(View.VISIBLE);
+                    qrImageView.setImageBitmap(bitmap);
+                    qrImageView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            qrImageView.setVisibility(View.GONE);
+                            mainLinearLayout.setVisibility(View.VISIBLE);
+                        }
+                    });
+                } catch (WriterException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
