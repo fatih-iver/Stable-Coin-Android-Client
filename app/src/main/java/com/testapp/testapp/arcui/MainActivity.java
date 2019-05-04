@@ -12,9 +12,13 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.CommonStatusCodes;
+import com.google.android.gms.vision.barcode.Barcode;
+import com.testapp.testapp.arcui.barcode.BarcodeCaptureActivity;
 import com.token.v1.os.launcher.ICustomerScreenService;
 import com.token.v1.os.launcher.INotificationService;
 import com.token.v1.os.launcher.IPrinterService;
@@ -38,6 +42,7 @@ import java.net.URL;
 public class MainActivity extends AppCompatActivity {
 
 
+    private static final String LOG_TAG = "MainActivity";
     static String packageName = "com.token.v1.os.launcher" ;
     static String cs_serviceName = packageName + ".CustomerScreenService";
     static String prn_serviceName = packageName + ".PrinterService";
@@ -67,6 +72,10 @@ public class MainActivity extends AppCompatActivity {
     private Button makeTransferButton;
     private EditText amountWithdraw;
     private Button withdrawButton;
+    private ImageView qr_receive;
+    private ImageView qr_send;
+
+    private final int BARCODE_READER_REQUEST_CODE = 1;
 
     final int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
             | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -132,6 +141,22 @@ public class MainActivity extends AppCompatActivity {
 
         m_screenWidth = dm.widthPixels;
         m_screenHeight = dm.heightPixels;
+
+        qr_receive = (ImageView) findViewById(R.id.qrReceive);
+        qr_receive.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, BarcodeCaptureActivity.class);
+                startActivityForResult(intent, BARCODE_READER_REQUEST_CODE);
+            }
+        });
+        qr_send = (ImageView) findViewById(R.id.qrSend);
+        qr_send.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
 
         balanceTextView = (TextView) findViewById(R.id.balanceTextView);
 
@@ -420,6 +445,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        balanceTextView.setText("0");
+        if (requestCode == BARCODE_READER_REQUEST_CODE) {
+            if (resultCode == CommonStatusCodes.SUCCESS) {
+                if (data != null) {
+                    Barcode barcode = data.getParcelableExtra("Barcode");
+                    String[] parts = barcode.displayValue.split(" ");
+                    receiverEditText.setText(parts[0]);
+                    amountEditText.setText(parts[1]);
+                }
+            } else
+                Log.e(LOG_TAG, String.format(getString(R.string.barcode_error_format),
+                        CommonStatusCodes.getStatusCodeString(resultCode)));
+        } else
+            super.onActivityResult(requestCode, resultCode, data);
+    }
 }
 

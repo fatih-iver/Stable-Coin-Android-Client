@@ -27,7 +27,8 @@
                     android:layout_marginTop="0dp"
                     android:background="@drawable/qrs"
                     android:adjustViewBounds="true"
-                    android:scaleType="centerCrop" />
+                    android:scaleType="centerCrop"
+                    android:layout_marginLeft="6dp"/>
 
                 <TextView
                     android:id="@+id/balanceTextView"
@@ -50,7 +51,8 @@
                     android:layout_marginTop="0dp"
                     android:background="@drawable/qrr"
                     android:adjustViewBounds="true"
-                    android:scaleType="centerCrop" />
+                    android:scaleType="centerCrop"
+                    android:layout_marginRight="6dp"/>
 
             </LinearLayout>
 

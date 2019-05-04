@@ -74,7 +74,7 @@ public final class BarcodeCaptureActivity extends AppCompatActivity
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
-        setContentView(R.layout.barcode_capture);
+        setContentView(R.layout.activity_barcode_capture);
 
         mPreview = (CameraSourcePreview) findViewById(R.id.preview);
 
