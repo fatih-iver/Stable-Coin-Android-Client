@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     JSONObject obj = new JSONObject(sb.toString());
 
-                    balanceTextView.setText(obj.getString("amount"));
+                    balanceTextView.setText(obj.getString("amount") + " " + "D-TL");
 
                     conn.disconnect();
                 } catch (Exception e) {
@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         qr_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String text= idEditText.getText().toString();
+                String text= idEditText.getText().toString() + " " + amountEditText.getText().toString();
                 MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
                 try {
                     BitMatrix bitMatrix = multiFormatWriter.encode(text, BarcodeFormat.QR_CODE,200,200);

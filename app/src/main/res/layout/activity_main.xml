@@ -86,7 +86,7 @@
                 android:background="@drawable/std_button"
                 android:textSize="24sp"
                 android:gravity = "center_horizontal"
-                android:hint="your user id..."/>
+                android:hint="your address..."/>
 
             <Button
                 android:id="@+id/getBalanceButton"
@@ -117,7 +117,7 @@
                 android:background="@drawable/std_button"
                 android:textSize="24sp"
                 android:gravity = "center_horizontal"
-                android:hint="receiver id" />
+                android:hint="receiver address..." />
 
             <EditText
                 android:id="@+id/amountEditText"
